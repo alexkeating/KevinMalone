@@ -1,7 +1,6 @@
 import discord
 import hashlib
 from bot.common.airtable import (
-    add_user_to_contribution,
     get_highest_contribution_records,
     get_contribution_records,
     get_user_record,
@@ -66,7 +65,8 @@ class SendContributionInstructions(BaseStep):
         await sent_message.add_reaction(YES_EMOJI)
         await sent_message.add_reaction(NO_EMOJI)
 
-        await add_user_to_contribution(self.guild_id, user_id, self.contribution_number)
+        # TODO: THis may be different now
+        # await add_user_to_contribution(self.guild_id, user_id, self.contribution_number)
 
         return sent_message, None
 

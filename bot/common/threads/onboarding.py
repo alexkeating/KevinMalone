@@ -2,7 +2,6 @@ from bot import constants
 import discord
 from bot.common.airtable import (
     find_user,
-    update_member,
     update_user,
     get_guild_by_guild_id,
     get_user_record,
@@ -75,11 +74,11 @@ class UserDisplayConfirmationEmojiStep(BaseStep):
 
     async def save(self, message, guild_id, user_id):
         user = await self.bot.fetch_user(user_id)
-        record_id = await find_user(user_id, guild_id)
-        await update_user(record_id, "display_name", user.name)
-        user_record = await get_user_record(user_id, guild_id)
-        member_id = user_record.get("fields").get("Members")[0]
-        await update_member(member_id, "Name", user.name)
+        record = await find_user(user_id)
+        await update_user(record.get("id"), "display_name", user.name)
+        # user_record = await get_user_record(user_id, guild_id)
+        # member_id = user_record.get("fields").get("Members")[0]
+        # await update_member(member_id, "Name", user.name)
 
 
 class UserDisplaySubmitStep(BaseStep):
@@ -95,12 +94,12 @@ class UserDisplaySubmitStep(BaseStep):
         return sent_message, None
 
     async def save(self, message, guild_id, user_id):
-        record_id = await find_user(user_id, guild_id)
+        record = await find_user(user_id)
         val = message.content.strip()
-        await update_user(record_id, "display_name", val)
-        user_record = await get_user_record(user_id, guild_id)
-        member_id = user_record.get("fields").get("Members")[0]
-        await update_member(member_id, "Name", val)
+        await update_user(record.get("id"), "display_name", val)
+        # user_record = await get_user_record(user_id, guild_id)
+        # member_id = user_record.get("fields").get("Members")[0]
+        # await update_member(member_id, "Name", val)
 
     async def handle_emoji(self, raw_reaction):
         return _handle_skip_emoji(raw_reaction, self.guild_id)
@@ -123,7 +122,7 @@ class AddUserTwitterStep(BaseStep):
         return sent_message, None
 
     async def save(self, message, guild_id, user_id):
-        record_id = await find_user(message.author.id, guild_id)
+        record_id = await find_user(message.author.id)
         await update_user(
             record_id, "twitter", message.content.strip().replace("@", "")
         )
@@ -149,7 +148,7 @@ class AddUserWalletAddressStep(BaseStep):
         return sent_message, None
 
     async def save(self, message, guild_id, user_id):
-        record_id = await find_user(message.author.id, guild_id)
+        record_id = await find_user(message.author.id)
         await update_user(record_id, "wallet", message.content.strip())
 
     async def handle_emoji(self, raw_reaction):
@@ -173,7 +172,7 @@ class AddDiscourseStep(BaseStep):
         return sent_message, None
 
     async def save(self, message, guild_id, user_id):
-        record_id = await find_user(message.author.id, guild_id)
+        record_id = await find_user(message.author.id)
         await update_user(record_id, "discourse", message.content.strip())
 
     async def handle_emoji(self, raw_reaction):
@@ -209,7 +208,7 @@ class CongratsStep(BaseStep):
         raise Exception("Reacted with the wrong emoji")
 
     async def control_hook(self, message, user_id):
-        govrn_profile = await find_user(user_id, constants.Bot.govrn_guild_id)
+        govrn_profile = await find_user(user_id)
         if not govrn_profile:
             return StepKeys.GOVRN_PROFILE_PROMPT.value
         return StepKeys.END.value
@@ -271,12 +270,11 @@ class GovrnProfilePromptSuccess(BaseStep):
     async def send(self, message, user_id):
         channel = message.channel
         # Get past guild and add the name
-        record = await get_guild_by_guild_id(self.guild_id)
-        fields = record.get("fields")
+        guild = await get_guild_by_guild_id(self.guild_id)
 
         sent_message = await channel.send(
             "Would you like to reuse your profile data from "
-            f"{fields.get('guild_name')} guild?"
+            f"{guild.get('name')} guild?"
         )
         await sent_message.add_reaction(YES_EMOJI)
         await sent_message.add_reaction(NO_EMOJI)

@@ -129,7 +129,7 @@ class UpdateFieldStep(BaseStep):
         field = metadata.get("field")
         if not field:
             raise Exception("No field present to update")
-        record_id = await find_user(user_id, guild_id)
+        record_id = await find_user(user_id)
         await update_user(record_id, field, message.content.strip())
 
 

@@ -9,8 +9,6 @@ import discord
 from bot.common.airtable import (
     find_user,
     create_user,
-    get_discord_record,
-    get_guild,
 )
 from bot.common.bot.bot import bot
 from bot.common.threads.thread_builder import (
@@ -95,7 +93,7 @@ async def join(ctx):
     if not is_guild:
         raise NotGuildException("Command was executed outside of a guild")
 
-    is_user = await find_user(ctx.author.id, ctx.guild.id)
+    is_user = await find_user(ctx.author.id)
     if is_user:
         # Send welcome message and
         # And ask what journey they are
@@ -140,7 +138,8 @@ async def join(ctx):
         )
         return
 
-    await create_user(ctx.author.id, ctx.guild.id)
+    # create should be done once the address is fetched
+    # await create_user(ctx.author.id, ctx.guild.id)
     onboarding = await Onboarding(
         ctx.author.id,
         hashlib.sha256("".encode()).hexdigest(),
@@ -315,8 +314,8 @@ if bool(strtobool(constants.Bot.is_dev)):
 
 
 async def select_guild(ctx, response_embed, error_embed):
-    discord_rec = await get_discord_record(ctx.author.id)
-    airtable_guild_ids = discord_rec.get("fields").get("guild_ids")
+    discord_rec = await find_user(ctx.author.id)
+    airtable_guild_ids = discord_rec.get("guilds")
     if not airtable_guild_ids:
         await ctx.response.send_message(embed=error_embed)
         ctx.response.is_done()
@@ -324,9 +323,8 @@ async def select_guild(ctx, response_embed, error_embed):
 
     await ctx.response.defer()
     guild_ids = []
-    for record_id in airtable_guild_ids:
-        g = await get_guild(record_id)
-        guild_id = g.get("guild_id")
+    for record in airtable_guild_ids:
+        guild_id = record.get("guild_id")
         if guild_id:
             guild_ids.append(guild_id)
     embed = response_embed
